@@ -1,7 +1,8 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, send_file,jsonify, render_template, request
 import sqlite3
 import socket
-
+import qrcode
+from io import BytesIO
 app = Flask(__name__)
 
 # Hàm kết nối đến cơ sở dữ liệu SQLite
@@ -183,6 +184,27 @@ def home():
 def admin():
     return render_template("admin.html")  # Định tuyến đến trang index.html
 
+def generate_qr_code():
+    # Lấy địa chỉ IP của máy chủ
+    ip = socket.gethostbyname(socket.gethostname())
+    url = f'http://{ip}:5000'
+    
+    # Tạo mã QR
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    
+    # Lưu mã QR vào buffer
+    img = qr.make_image(fill='black', back_color='white')
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
+@app.route("/qr")
+def qr_code():
+    # Trả mã QR dưới dạng ảnh PNG
+    buffer = generate_qr_code()
+    return send_file(buffer, mimetype="image/png")
 if __name__ == "__main__":
     create_tables()  # Tạo bảng khi chạy lần đầu
     # Chạy Flask trên địa chỉ IP nội bộ của máy tính
