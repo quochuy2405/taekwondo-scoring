@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <style>
-    body {
-      touch-action: manipulation;
-      /* Giữ thao tác cảm ứng bình thường, tắt zoom */
-    }
+</head>
+<style>
+  body {
+    touch-action: manipulation;
+    /* Giữ thao tác cảm ứng bình thường, tắt zoom */
+  }
 
 </style>
 
@@ -21,18 +21,25 @@
     <div
       class="bg-white text-gray-800 absolute top-0 right-0 h-full rounded-lg shadow-lg rotate-90 md:rotate-0 flex flex-col items-center w-[100dvh] h-[100dvw] md:w-full md:h-full">
       <div class="hidden md:flex h-full w-full relative">
-        <div class="absolute top-[100px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-6 font-bold text-white">
-          <h3 class="text-xl font-bold mb-4  fighter1-name"></h3>
-          <h3 class="text-3xl">VS</h3>
-          <h3 class="text-xl font-bold mb-4  fighter2-name"></h3>
-        </div>
+        <div
+          class="absolute top-[100px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex  flex-col items-center justify-center  gap-6 font-bold text-white">
+          <div class="flex gap-6 font-bold text-white">
+            <h3 class="text-xl font-bold mb-4  fighter1-name"></h3>
+            <h3 class="text-3xl">VS</h3>
+            <h3 class="text-xl font-bold mb-4  fighter2-name"></h3>
+          </div>
+          <div id="countdown-timer"
+            class="h-10 bg-yellow-400 flex items-center justify-center text-2xl text-white font-semibold px-8 py-6 w-[200px]">
+            00:00
+          </div>
+          </div>
         <div class="h-full flex-1 bg-blue-500 flex items-center justify-center font-bold text-[120px] text-white">
           <h2 class="fighter1-score">0</h2>
         </div>
         <div class="h-full flex-1 bg-red-500 flex items-center justify-center font-bold text-[120px] text-white">
           <h2 class="fighter2-score">0</h2>
         </div>
-        </div>
+      </div>
       <div class="flex space-x-16 mt-6 md:hidden">
         <div class="flex flex-col items-center">
           <div class="flex gap-2">
@@ -49,12 +56,12 @@
               class="bg-blue-500 text-2xl hover:bg-blue-600 text-white font-bold py-2 px-4 shadow-md transition-all transform active:scale-90 w-[30vw] h-[30vw] rounded-full">
               +2
             </button>
-            </div>
+          </div>
           <button onclick="addPoints('fighter1_score', 3)"
             class="bg-blue-500 hover:bg-blue-600 text-2xl text-white font-bold py-2 px-4 shadow-md transition-all transform active:scale-90 w-[30vw] h-[30vw] rounded-full">
             +3
           </button>
-          </div>
+        </div>
 
         <div class="flex flex-col items-center">
           <div class="flex gap-2">
@@ -71,29 +78,29 @@
               class="bg-red-500 text-2xl hover:bg-red-600 text-white font-bold py-2 px-4 shadow-md transition-all transform active:scale-90 w-[30vw] h-[30vw] rounded-full">
               +2
             </button>
-            </div>
+          </div>
           <button onclick="addPoints('fighter2_score', 3)"
             class="bg-red-500 text-2xl hover:bg-red-600 text-white font-bold py-2 px-4 shadow-md transition-all transform active:scale-90 w-[30vw] h-[30vw] rounded-full">
             +3
           </button>
-          </div>
-          </div>
-          </div>
-          </div>
-          <script>
-            // Lấy điểm số hiện tại của các fighter từ server (giả định có API)
-            const fetchScores = async () => {
-              try {
-                const response = await fetch("/api/score", { method: "GET" });
-                if (!response.ok) {
-                  throw new Error("Failed to fetch scores");
-                }
-                const data = await response.json();
-                return data;
-              } catch (error) {
-                console.error(error);
+        </div>
+        </div>
+        </div>
+        </div>
+        <script>
+          // Lấy điểm số hiện tại của các fighter từ server (giả định có API)
+          const fetchScores = async () => {
+            try {
+              const response = await fetch("/api/score", { method: "GET" });
+              if (!response.ok) {
+                throw new Error("Failed to fetch scores");
               }
-            };
+              const data = await response.json();
+              return data;
+            } catch (error) {
+              console.error(error);
+            }
+          };
 
       // Cập nhật điểm số mới cho các fighter lên server (giả định có API)
       const updateScores = async (newScores) => {
@@ -119,14 +126,39 @@
       await updateScores({ [fighter]: points });
     };
 
+                      const startCountdown = (minutes, seconds) => {
+                        const countdownElement = document.getElementById("countdown-timer");
+                        let totalSeconds = minutes * 60 + seconds;
+
+                        const updateTimer = () => {
+                          const mins = Math.floor(totalSeconds / 60);
+                          const secs = totalSeconds % 60;
+                          countdownElement.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+                          if (totalSeconds > 0) {
+                            totalSeconds--;
+                          } else {
+                            clearInterval(timerInterval); // Stop the countdown when it reaches 0
+                            countdownElement.textContent = "00:00";
+                          }
+                        };
+
+                        // Run the timer every second
+                        const timerInterval = setInterval(updateTimer, 1000);
+                        updateTimer(); // Call immediately to avoid 1s delay
+                      };
+
+                      // Example usage: Start countdown with 2 minutes and 30 seconds
+                      startCountdown(2, 30);
+                    
       // Lấy và hiển thị điểm số ban đầu khi trang được tải
       setInterval(async () => {
       const fingters = await fetchScores();
 
       // Cập nhật điểm cho tất cả các phần tử có class 'fighter1-score'
       document.querySelectorAll(".fighter1-score").forEach(element => {
-      element.textContent = fingters.fighter1_score;
-    });
+        element.textContent = fingters.fighter1_score;
+      });
 
         // Cập nhật điểm cho tất cả các phần tử có class 'fighter2-score'
         document.querySelectorAll(".fighter2-score").forEach(element => {
@@ -139,7 +171,7 @@
       document.querySelectorAll(".fighter2-name").forEach(element => {
         element.textContent = fingters.fighter2_name;
       });
-      console.log(fingters);
+
       //   {
       //   "fighter1_name": "",
       //     "fighter1_score": 0,

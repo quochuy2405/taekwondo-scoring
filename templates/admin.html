@@ -283,10 +283,10 @@
       setInterval(async () => {
         const scores = await fetchScores();
         document.querySelectorAll(".fighter1-score").forEach(element => {
-          element.textContent = scores.fighter1;
+          element.textContent = scores.fighter1_score;
         });
         document.querySelectorAll(".fighter2-score").forEach(element => {
-          element.textContent = scores.fighter2;
+          element.textContent = scores.fighter2_score;
         });
       }, 300);
     </script>
