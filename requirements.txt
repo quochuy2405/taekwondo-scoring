@@ -1,0 +1,6 @@
+flask
+pywifi 
+qrcode[pil] 
+pillow 
+requests 
+comtypes
