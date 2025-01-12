@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Taekwondo Alpha - Krông Pa</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{{ url_for('static', filename='js/tailwind.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dayjs.min.js') }}"></script>
 </head>
 <style>
   body {
@@ -87,102 +88,10 @@
         </div>
         </div>
         </div>
-        <script>
-          // Lấy điểm số hiện tại của các fighter từ server (giả định có API)
-          const fetchScores = async () => {
-            try {
-              const response = await fetch("/api/score", { method: "GET" });
-              if (!response.ok) {
-                throw new Error("Failed to fetch scores");
-              }
-              const data = await response.json();
-              return data;
-            } catch (error) {
-              console.error(error);
-            }
-          };
+        
+          <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 
-      // Cập nhật điểm số mới cho các fighter lên server (giả định có API)
-      const updateScores = async (newScores) => {
-        try {
-        const response = await fetch("/api/score", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newScores),
-        });
-        if (!response.ok) {
-          throw new Error("Failed to update scores");
-        }
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-      // Chức năng thêm điểm cho fighter
-      const addPoints = async (fighter, points) => {
-      // Cập nhật điểm mới lên server
-      await updateScores({ [fighter]: points });
-    };
-
-                      const startCountdown = (minutes, seconds) => {
-                        const countdownElement = document.getElementById("countdown-timer");
-                        let totalSeconds = minutes * 60 + seconds;
-
-                        const updateTimer = () => {
-                          const mins = Math.floor(totalSeconds / 60);
-                          const secs = totalSeconds % 60;
-                          countdownElement.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-
-                          if (totalSeconds > 0) {
-                            totalSeconds--;
-                          } else {
-                            clearInterval(timerInterval); // Stop the countdown when it reaches 0
-                            countdownElement.textContent = "00:00";
-                          }
-                        };
-
-                        // Run the timer every second
-                        const timerInterval = setInterval(updateTimer, 1000);
-                        updateTimer(); // Call immediately to avoid 1s delay
-                      };
-
-                      // Example usage: Start countdown with 2 minutes and 30 seconds
-                      startCountdown(2, 30);
-                    
-      // Lấy và hiển thị điểm số ban đầu khi trang được tải
-      setInterval(async () => {
-      const fingters = await fetchScores();
-
-      // Cập nhật điểm cho tất cả các phần tử có class 'fighter1-score'
-      document.querySelectorAll(".fighter1-score").forEach(element => {
-        element.textContent = fingters.fighter1_score;
-      });
-
-        // Cập nhật điểm cho tất cả các phần tử có class 'fighter2-score'
-        document.querySelectorAll(".fighter2-score").forEach(element => {
-          element.textContent = fingters.fighter2_score;
-        });
-
-      document.querySelectorAll(".fighter1-name").forEach(element => {
-        element.textContent = fingters.fighter1_name;
-      });
-      document.querySelectorAll(".fighter2-name").forEach(element => {
-        element.textContent = fingters.fighter2_name;
-      });
-
-      //   {
-      //   "fighter1_name": "",
-      //     "fighter1_score": 0,
-      //       "fighter2_name": "",
-      //         "fighter2_score": 0
-      // }
-
-
-      }, 300);
-
-</script>
+    
 </body>
 
 </html>

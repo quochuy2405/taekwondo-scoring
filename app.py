@@ -1,8 +1,9 @@
-from flask import Flask, send_file,jsonify, render_template, request
+from flask import Flask, send_file, jsonify, render_template, request
 import sqlite3
 import socket
 import qrcode
 from io import BytesIO
+
 app = Flask(__name__)
 
 # Hàm kết nối đến cơ sở dữ liệu SQLite
@@ -11,9 +12,11 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row  # Để dễ dàng truy cập dữ liệu theo tên cột
     return conn
 
-# Hàm tạo bảng FighterCurrent và History
+# Hàm tạo bảng FighterCurrent, History và MatchTimer
 def create_tables():
     conn = get_db_connection()
+
+    # Tạo bảng FighterCurrent (bảng trận đấu hiện tại)
     conn.execute('''CREATE TABLE IF NOT EXISTS FighterCurrent (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         fighter1_name TEXT,
@@ -25,7 +28,8 @@ def create_tables():
                         fighter1_score INTEGER,
                         fighter2_score INTEGER
                     )''')
-    
+
+    # Tạo bảng History (bảng lịch sử các trận đấu đã kết thúc)
     conn.execute('''CREATE TABLE IF NOT EXISTS History (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         fighter1_name TEXT,
@@ -37,9 +41,19 @@ def create_tables():
                         fighter1_score INTEGER,
                         fighter2_score INTEGER
                     )''')
+
+    # Tạo bảng MatchTimer (bảng lưu trữ thời gian của các hiệp đấu)
+    conn.execute('''CREATE TABLE IF NOT EXISTS MatchTimer (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        round TEXT,
+                        start_time TEXT,
+                        end_time TEXT
+                    )''')
+
     conn.commit()
     conn.close()
 
+# API để cập nhật thông tin trận đấu hiện tại
 @app.route("/api/update_current_fighter", methods=["POST"])
 def add_current_fighter():
     try:
@@ -60,7 +74,7 @@ def add_current_fighter():
 
         # Xóa tất cả các bản ghi cũ trong bảng FighterCurrent (chỉ giữ 1 bản ghi)
         conn.execute('DELETE FROM FighterCurrent')
-        
+
         # Lưu thông tin mới vào bảng FighterCurrent
         conn.execute('''INSERT INTO FighterCurrent 
                         (fighter1_name, fighter1_team, fighter2_name, fighter2_team, weight_class, round, fighter1_score, fighter2_score) 
@@ -82,7 +96,7 @@ def get_scores():
     cursor.execute("SELECT * FROM FighterCurrent ORDER BY id DESC LIMIT 1")  # Lấy bản ghi mới nhất
     row = cursor.fetchone()
     conn.close()
-    
+
     if row:
         return jsonify({
             "fighter1_name": row["fighter1_name"],
@@ -106,7 +120,6 @@ def get_scores():
 def update_scores():
     try:
         new_scores = request.get_json()
-        print(new_scores)
         # Lấy dữ liệu từ body request
         fighter1_score = new_scores.get("fighter1_score", 0)
         fighter2_score = new_scores.get("fighter2_score", 0)
@@ -129,7 +142,7 @@ def update_scores():
         else:
             # Nếu chưa có bản ghi, trả về lỗi
             return jsonify({"error": "No match found to update scores."}), 400
-        
+
         conn.close()
 
         return jsonify({"message": "Scores updated successfully", 
@@ -174,39 +187,80 @@ def finish_match():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# API để lưu trữ thời gian của các hiệp đấu
+@app.route("/api/timer", methods=["GET"])
+def get_timer():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM MatchTimer")
+        rows = cursor.fetchone()
+        conn.close()
+
+        return jsonify({"round": rows["round"], "start_time": rows["start_time"], "end_time": rows["end_time"]})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# API để bắt đầu trận đấu và lưu thời gian
+@app.route("/api/start_fight", methods=["POST"])
+def start_fight():
+    try:
+        data = request.get_json()
+        round = data.get("round", "round_1")
+        start_time = data.get("start_time", "")
+        end_time = data.get("end_time", "")
+
+
+        # Reset bảng FighterCurrent
+        
+        conn = get_db_connection()
+        conn.execute('DELETE FROM MatchTimer')
+        conn.commit()
+        conn.execute('''INSERT INTO MatchTimer (round, start_time, end_time)
+                        VALUES (?, ?, ?)''', (round, start_time, end_time))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "message": f"Fight started for {round}",
+            "start_time": start_time,
+            "end_time": end_time
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 # Trang chủ
 @app.route("/")
 def home():
-    return render_template("index.html")  # Định tuyến đến trang index.html
+    return render_template("index.html")
 
 # Trang admin
 @app.route("/admin")
 def admin():
-    return render_template("admin.html")  # Định tuyến đến trang index.html
+    return render_template("admin.html")
 
 def generate_qr_code():
-    # Lấy địa chỉ IP của máy chủ
     ip = socket.gethostbyname(socket.gethostname())
     url = f'http://{ip}:5000'
-    
-    # Tạo mã QR
+
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
     qr.add_data(url)
     qr.make(fit=True)
-    
-    # Lưu mã QR vào buffer
+
     img = qr.make_image(fill='black', back_color='white')
     buffer = BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
     return buffer
+
 @app.route("/qr")
 def qr_code():
-    # Trả mã QR dưới dạng ảnh PNG
     buffer = generate_qr_code()
     return send_file(buffer, mimetype="image/png")
+
 if __name__ == "__main__":
     create_tables()  # Tạo bảng khi chạy lần đầu
-    # Chạy Flask trên địa chỉ IP nội bộ của máy tính
     ip = socket.gethostbyname(socket.gethostname())
     app.run(host=ip, port=5000)
